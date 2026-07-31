@@ -1,0 +1,50 @@
+name: Build and release station-board
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+          cache: pip
+
+      - name: Install Tkinter build dependency
+        run: sudo apt-get update && sudo apt-get install --yes python3-tk
+
+      - name: Install Python dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+
+      - name: Build application with PyInstaller
+        run: pyinstaller --clean --noconfirm --name station-board --onefile --windowed src/main.py
+
+      - name: Package application
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: tar -czf "station-board-${TAG_NAME}-linux-x86_64.tar.gz" -C dist station-board
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG_NAME" \
+            "station-board-${TAG_NAME}-linux-x86_64.tar.gz" \
+            --title "$TAG_NAME" \
+            --generate-notes
