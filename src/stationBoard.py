@@ -96,7 +96,7 @@ class StationBoard:
             if i > 0:
                 sep = Frame(root, bg=BOARD_FONT_COLOUR, height=1)
                 sep.pack(fill=X)
-            self.platform_boards.append(TrainBoard(root, platform))
+            self.platform_boards.append(PlatformBoard(root, platform))
 
         root.after(3000, self.switchOverlays)
         root.after(250, self.scrollText)
@@ -177,7 +177,7 @@ class StationBoard:
         ]
 
 
-class TrainBoard:
+class PlatformBoard:
 
     def __init__(self, root, platform_number):
         self.platform_number = platform_number

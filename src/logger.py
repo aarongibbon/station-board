@@ -10,7 +10,7 @@ def configure_logger():
     Sets up both console and file logging handlers.
     Console output is set to INFO level, while file logging captures DEBUG and above.
 
-    Log files are stored in ~/.local/var/log/train-board/ and rotate daily at midnight.
+    Log files are stored in ~/.local/var/log/station-board/ and rotate daily at midnight.
 
     Returns:
         logging.Logger: Configured logger instance for the application
@@ -29,11 +29,11 @@ def configure_logger():
     console_handler.setLevel(logging.INFO)
 
     # Create timed rotating file handler
-    # Logs to ~/.local/var/log/train-board/ following XDG Base Directory spec
-    log_dir = os.path.expanduser("~/.local/var/log/train-board")
+    # Logs to ~/.local/var/log/station-board/ following XDG Base Directory spec
+    log_dir = os.path.expanduser("~/.local/var/log/station-board")
     os.makedirs(log_dir, exist_ok=True)
 
-    log_file = os.path.join(log_dir, "train-board.log")
+    log_file = os.path.join(log_dir, "station-board.log")
     # TimedRotatingFileHandler rotates at midnight, keeps 30 days of logs
     file_handler = TimedRotatingFileHandler(
         log_file, when="midnight", interval=1, backupCount=30, utc=False

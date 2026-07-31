@@ -4,7 +4,7 @@ import os
 from tkinter import *
 
 from logger import configure_logger
-from trainBoard import StationBoard
+from stationBoard import StationBoard
 
 
 def loadConfig():
@@ -24,7 +24,7 @@ def loadConfig():
 if __name__ == "__main__":
     # Configure logger at application startup
     logger = configure_logger()
-    logger.info("Starting trainBoard application")
+    logger.info("Starting station-board application")
 
     config = loadConfig()
     station = config["stationCode"]
