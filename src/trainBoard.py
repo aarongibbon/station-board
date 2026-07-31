@@ -133,6 +133,9 @@ class StationBoard:
                 logger.info(f"API response keys: {list(response.keys())}")
                 train_services = response.get("trainServices", [])
                 bus_services = response.get("busServices", [])
+                # Mark bus services so we can identify them later
+                for bus_service in bus_services:
+                    bus_service["isBusService"] = True
                 station_data = train_services + bus_services
                 logger.info(
                     f"Received {len(train_services)} train services and {len(bus_services)} bus services from API"
@@ -327,6 +330,7 @@ class TrainBoard:
                 "callingPoint", []
             ),
             "serviceType": service.get("serviceType"),
+            "isBusService": service.get("isBusService", False),
         }
 
     def setData(self, services):
@@ -375,8 +379,15 @@ class TrainBoard:
                     self.generateCallingPointsString(data["callingPoints"])
                 )
                 self.scrollPosition = self.leadingScroll
-                self.rowC._num_carriages = data["carriages"]
-                draw_carriages(self.rowC)
+
+                if data["isBusService"]:
+                    # For bus services, display replacement service message in carriage area
+                    draw_bus_replacement_text(self.rowC)
+                else:
+                    # For train services, display carriages
+                    self.rowC._num_carriages = data["carriages"]
+                    draw_carriages(self.rowC)
+
                 self.rowB2.update_idletasks()
                 logger.info(
                     f"Platform {self.platform_number} calling points set: {len(self.rowB2text.get())} chars, entry width={self.rowB2.winfo_width()}"
@@ -475,4 +486,20 @@ def draw_canvas_triangle(canvas, width, height):
         stipple="gray25",
         width=1,
         dash=(1, 3),
+    )
+
+
+def draw_bus_replacement_text(canvas):
+    """Display 'This is a rail replacement service.' text on canvas."""
+    canvas.delete("all")
+    h = canvas.winfo_height()
+    w = canvas.winfo_width()
+    if h <= 1 or w <= 1:
+        return
+    canvas.create_text(
+        w // 2,
+        h // 2,
+        text="This is a rail replacement service.",
+        fill=BOARD_FONT_COLOUR,
+        font=(BOARD_FONT, BOARD_FONT_SIZE),
     )

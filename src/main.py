@@ -8,7 +8,15 @@ from trainBoard import StationBoard
 
 
 def loadConfig():
-    with open(os.path.dirname(__file__) + "/../config.json", "r") as programConfig:
+    # Look for config.json in current working directory
+    config_path = "config.json"
+
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(
+            f"config.json not found in current directory: {os.getcwd()}"
+        )
+
+    with open(config_path, "r") as programConfig:
         config = json.load(programConfig)
         return config
 
