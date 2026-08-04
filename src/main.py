@@ -5,6 +5,7 @@ from tkinter import *
 
 from logger import configure_logger
 from stationBoard import StationBoard
+from _version import __version__
 
 
 def loadConfig():
@@ -32,6 +33,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--test", action="store_true")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     args = parser.parse_args()
 
     StationBoard(station, config["api_token"], test=args.test)
