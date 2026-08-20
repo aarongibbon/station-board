@@ -10,12 +10,14 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch:
-          - x86_64
-          - arm64
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - name: Check out tagged source
@@ -40,19 +42,35 @@ jobs:
         run: echo "__version__ = '${{ github.ref_name }}'" > src/_version.py
 
       - name: Build application with PyInstaller
-        run: pyinstaller --clean --noconfirm --name station-board --onefile --windowed src/main.py --target-arch ${{ matrix.arch }}
+        run: pyinstaller --clean --noconfirm --name station-board --onefile --windowed src/main.py
 
       - name: Package application
         env:
           TAG_NAME: ${{ github.ref_name }}
         run: tar -czf "station-board-${TAG_NAME}-linux-${{ matrix.arch }}.tar.gz" -C dist station-board
 
-      - name: Create GitHub release
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: station-board-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz
+          path: station-board-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Upload release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}
         run: |
           gh release create "$TAG_NAME" \
-            "station-board-${TAG_NAME}-linux-${{ matrix.arch }}.tar.gz" \
+            release-assets/* \
             --title "$TAG_NAME" \
             --generate-notes
