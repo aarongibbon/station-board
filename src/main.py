@@ -22,6 +22,14 @@ def loadConfig():
         return config
 
 
+def getScreenDimensions():
+    root = Tk()
+    root.withdraw()
+    dimensions = (root.winfo_screenwidth(), root.winfo_screenheight())
+    root.destroy()
+    return dimensions
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--test", action="store_true")
@@ -35,5 +43,17 @@ if __name__ == "__main__":
     config = loadConfig()
     station = config["stationCode"]
     logger.info(f"Loaded configuration for station: {station}")
+    platform_board_width = config.get("platform_board_width")
+    platform_board_height = config.get("platform_board_height")
+    if platform_board_width is None or platform_board_height is None:
+        screen_width, screen_height = getScreenDimensions()
+        platform_board_width = platform_board_width or screen_width
+        platform_board_height = platform_board_height or screen_height
 
-    StationBoard(station, config["api_token"], test=args.test)
+    StationBoard(
+        station,
+        config["api_token"],
+        platform_board_width=platform_board_width,
+        platform_board_height=platform_board_height,
+        test=args.test,
+    )

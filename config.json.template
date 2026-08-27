@@ -1,4 +1,6 @@
 {
-    apiToken: "",
-    stationCode: ""
+    "api_token": "",
+    "stationCode": "",
+    "platform_board_width": 800,
+    "platform_board_height": 240
 }
