@@ -7,6 +7,8 @@ from _version import __version__
 from logger import configure_logger
 from stationBoard import StationBoard
 
+DEFAULT_PLATFORMS = [1, 2]
+
 
 def loadConfig():
     # Look for config.json in current working directory
@@ -30,6 +32,23 @@ def getScreenDimensions():
     return dimensions
 
 
+def validate_positive_dimension(name, value):
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValueError(f"{name} must be a positive integer, got {value!r}")
+
+
+def validate_platforms(platforms):
+    if not isinstance(platforms, list) or not platforms:
+        raise ValueError("platforms must be a non-empty list")
+    if any(
+        isinstance(platform, bool) or not isinstance(platform, int) or platform <= 0
+        for platform in platforms
+    ):
+        raise ValueError("platforms must contain only positive integers")
+    if len(platforms) != len(set(platforms)):
+        raise ValueError("platforms must not contain duplicates")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--test", action="store_true")
@@ -42,17 +61,47 @@ if __name__ == "__main__":
 
     config = loadConfig()
     station = config["stationCode"]
-    logger.info(f"Loaded configuration for station: {station}")
-    platform_board_width = config.get("platform_board_width")
-    platform_board_height = config.get("platform_board_height")
-    if platform_board_width is None or platform_board_height is None:
+    logger.info(f"Loaded configuration from config.json for station: {station}")
+    logger.debug(f"Configuration keys loaded: {sorted(config.keys())}")
+    platforms = config.get("platforms", DEFAULT_PLATFORMS)
+    validate_platforms(platforms)
+    logger.info(f"Configured platforms: {platforms}")
+
+    station_board_width = config.get("station_board_width")
+    station_board_height = config.get("station_board_height")
+    logger.debug(
+        f"Configured station dimensions: width={station_board_width}, "
+        f"height={station_board_height}"
+    )
+    if station_board_width is None or station_board_height is None:
+        logger.info("Station dimensions not fully configured; detecting display size")
         screen_width, screen_height = getScreenDimensions()
-        platform_board_width = platform_board_width or screen_width
-        platform_board_height = platform_board_height or screen_height
+        logger.info(f"Detected display dimensions: {screen_width}x{screen_height}")
+        if station_board_width is None:
+            station_board_width = screen_width
+        if station_board_height is None:
+            station_board_height = screen_height
+        logger.info(
+            f"Using resolved station dimensions: "
+            f"{station_board_width}x{station_board_height}"
+        )
+    else:
+        logger.info("Using station dimensions from configuration")
+
+    validate_positive_dimension("station_board_width", station_board_width)
+    validate_positive_dimension("station_board_height", station_board_height)
+    platform_board_width = station_board_width
+    platform_board_height = station_board_height // len(platforms)
+    logger.info(
+        f"Starting station board with dimensions: "
+        f"{station_board_width}x{station_board_height}; "
+        f"platform height: {platform_board_height}"
+    )
 
     StationBoard(
         station,
         config["api_token"],
+        platforms=platforms,
         platform_board_width=platform_board_width,
         platform_board_height=platform_board_height,
         test=args.test,
