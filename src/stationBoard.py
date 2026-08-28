@@ -11,6 +11,8 @@ logger = logging.getLogger("station_board")
 BOARD_FONT = "London Underground"
 BOARD_FONT_SIZE = 24
 BOARD_FONT_COLOUR = "white"
+BASE_BOARD_WIDTH = 800
+BASE_PLATFORM_HEIGHT = 240
 
 
 class ServiceRow:
@@ -91,12 +93,17 @@ class StationBoard:
         root.geometry(f"{station_board_width}x{station_board_height}")
         root.attributes("-type", "dock")
 
+        font_scale = min(
+            station_board_width / BASE_BOARD_WIDTH,
+            platform_board_height / BASE_PLATFORM_HEIGHT,
+        )
+
         self.platform_boards = []
         for i, platform in enumerate(platforms):
             if i > 0:
                 sep = Frame(root, bg=BOARD_FONT_COLOUR, height=1)
                 sep.pack(fill=X)
-            self.platform_boards.append(PlatformBoard(root, platform))
+            self.platform_boards.append(PlatformBoard(root, platform, font_scale))
 
         root.after(3000, self.switchOverlays)
         root.after(250, self.scrollText)
@@ -107,7 +114,7 @@ class StationBoard:
             textvariable=self.timeVar,
             fg=BOARD_FONT_COLOUR,
             bg="black",
-            font=(BOARD_FONT, BOARD_FONT_SIZE),
+            font=(BOARD_FONT, int(BOARD_FONT_SIZE * font_scale)),
         )
         timeText.pack(fill=X)
         timeText.after(500, self.updateClock)
@@ -179,8 +186,9 @@ class StationBoard:
 
 class PlatformBoard:
 
-    def __init__(self, root, platform_number):
+    def __init__(self, root, platform_number, font_scale=1):
         self.platform_number = platform_number
+        self.font_scale = font_scale
         screen = Frame(root, background="black")
         screen.grid_propagate(0)
         screen.pack(fill=BOTH, expand=1)
@@ -194,7 +202,9 @@ class PlatformBoard:
         platform_canvas.grid(row=0, column=0, rowspan=5, sticky="nesw")
         platform_canvas.bind(
             "<Configure>",
-            lambda event: draw_platform_number(platform_number, platform_canvas, event),
+            lambda event: draw_platform_number(
+                platform_number, platform_canvas, event, font_scale
+            ),
         )
 
         self.root = screen
@@ -219,9 +229,9 @@ class PlatformBoard:
         self.rowE.grid(row=4, column=1, sticky="nesw")
         self.rowD.grid(row=4, column=1, sticky="nesw")
 
-        self.service1st = ServiceRow(self.rowA)
-        self.service2nd = ServiceRow(self.rowD, font_scale=0.75)
-        self.service3rd = ServiceRow(self.rowE, font_scale=0.75)
+        self.service1st = ServiceRow(self.rowA, font_scale=font_scale)
+        self.service2nd = ServiceRow(self.rowD, font_scale=0.75 * font_scale)
+        self.service3rd = ServiceRow(self.rowE, font_scale=0.75 * font_scale)
 
         self.rowB1text = StringVar(screen)
         self.rowB2text = StringVar(screen)
@@ -241,9 +251,9 @@ class PlatformBoard:
             fg=BOARD_FONT_COLOUR,
             bg="black",
             anchor="w",
-            font=(BOARD_FONT, BOARD_FONT_SIZE),
+            font=(BOARD_FONT, int(BOARD_FONT_SIZE * font_scale)),
         )
-        rowB1.pack(side=LEFT, padx=(0, 20))
+        rowB1.pack(side=LEFT, padx=(0, int(20 * font_scale)))
 
         self.rowB2 = Entry(
             self.rowB,
@@ -251,13 +261,13 @@ class PlatformBoard:
             fg=BOARD_FONT_COLOUR,
             bg="black",
             bd=0,
-            font=(BOARD_FONT, BOARD_FONT_SIZE),
+            font=(BOARD_FONT, int(BOARD_FONT_SIZE * font_scale)),
             state="readonly",
             readonlybackground="black",
             relief="flat",
             highlightthickness=0,
         )
-        self.rowB2.pack(side=LEFT)
+        self.rowB2.pack(side=LEFT, fill=X, expand=1)
 
     def switchOverlay(self):
         self.overlayRows.reverse()
@@ -284,7 +294,10 @@ class PlatformBoard:
         logger.debug(
             f"Platform {self.platform_number} incrementTextScroll: pos={self.scrollPosition}, len={len(text)}, xview={entry_xview}"
         )
-        if self.scrollPosition <= 0:
+        if not text:
+            self.scrollPosition = self.leadingScroll
+            return
+        elif self.scrollPosition <= 0:
             self.scrollPosition += number
             return
         elif self.scrollPosition == len(text):
@@ -382,7 +395,7 @@ class PlatformBoard:
 
                 if data["isBusService"]:
                     # For bus services, display replacement service message in carriage area
-                    draw_bus_replacement_text(self.rowC)
+                    draw_bus_replacement_text(self.rowC, self.font_scale)
                 else:
                     # For train services, display carriages
                     self.rowC._num_carriages = data["carriages"]
@@ -407,13 +420,13 @@ class PlatformBoard:
         self.showRows()
 
 
-def draw_platform_number(platform_number, platform_canvas, event=None):
+def draw_platform_number(platform_number, platform_canvas, event=None, font_scale=1):
     platform_canvas.delete("all")
     w = event.width
     h = event.height
     # w = platform_canvas.winfo_width()
     # h = platform_canvas.winfo_height()
-    margin = 8
+    margin = max(1, int(8 * font_scale))
 
     # dotted border around the whole platform area
     platform_canvas.create_rectangle(
@@ -426,7 +439,7 @@ def draw_platform_number(platform_number, platform_canvas, event=None):
         h // 3,
         text="Plat",
         fill=BOARD_FONT_COLOUR,
-        font=(BOARD_FONT, BOARD_FONT_SIZE),
+        font=(BOARD_FONT, int(BOARD_FONT_SIZE * font_scale)),
     )
 
     # platform number filling the bottom two thirds
@@ -435,7 +448,7 @@ def draw_platform_number(platform_number, platform_canvas, event=None):
         h // 3 + h // 3,
         text=str(platform_number),
         fill=BOARD_FONT_COLOUR,
-        font=(BOARD_FONT, BOARD_FONT_SIZE * 2),
+        font=(BOARD_FONT, int(BOARD_FONT_SIZE * 2 * font_scale)),
     )
 
 
@@ -489,7 +502,7 @@ def draw_canvas_triangle(canvas, width, height):
     )
 
 
-def draw_bus_replacement_text(canvas):
+def draw_bus_replacement_text(canvas, font_scale=1):
     """Display 'This is a rail replacement service.' text on canvas."""
     canvas.delete("all")
     h = canvas.winfo_height()
@@ -501,5 +514,5 @@ def draw_bus_replacement_text(canvas):
         h // 2,
         text="This is a rail replacement service.",
         fill=BOARD_FONT_COLOUR,
-        font=(BOARD_FONT, BOARD_FONT_SIZE),
+        font=(BOARD_FONT, int(BOARD_FONT_SIZE * font_scale)),
     )
