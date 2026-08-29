@@ -38,7 +38,7 @@ def configure_logger():
     file_handler = TimedRotatingFileHandler(
         log_file, when="midnight", interval=1, backupCount=30, utc=False
     )
-    file_handler.setLevel(logging.DEBUG)
+    file_handler.setLevel(logging.INFO)
 
     # Create formatter
     formatter = logging.Formatter(
