@@ -467,8 +467,18 @@ def draw_carriages(canvas, event=None):
     carriage_width = carriage_height * 1.25
     triangle_width = carriage_height // 2
 
-    if canvas._num_carriages:
-        draw_canvas_triangle(canvas, triangle_width, carriage_height)
+    if not canvas._num_carriages:
+        canvas.create_text(
+            0,
+            carriage_height // 2,
+            text="Carriage data not available",
+            fill=BOARD_FONT_COLOUR,
+            font=(BOARD_FONT, BOARD_FONT_SIZE),
+            anchor="w",
+        )
+        return
+
+    draw_canvas_triangle(canvas, triangle_width, carriage_height)
 
     for i in range(canvas._num_carriages):
         x = triangle_width + i * carriage_width
