@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from tkinter import *
 
+from platform_fallback import apply_platform_fallback
 from trains import TrainApi
 
 logger = logging.getLogger("station_board")
@@ -78,10 +79,16 @@ class StationBoard:
         platforms=[1, 2],
         platform_board_width=800,
         platform_board_height=240,
+        platform_fallback=None,
         test=False,
     ):
         self.station = station
         self.test = test
+        self.platform_fallback = platform_fallback or {
+            "enabled": False,
+            "rules": [],
+        }
+        self._platform_fallback_logged_notes = {}
 
         platform_count = len(platforms)
         station_board_width = platform_board_width
@@ -150,6 +157,13 @@ class StationBoard:
             except Exception as e:
                 logger.error(f"Error fetching station data: {e}")
                 station_data = []
+
+        apply_platform_fallback(
+            station_data,
+            self.platform_fallback,
+            logger,
+            self._platform_fallback_logged_notes,
+        )
 
         for board in self.platform_boards:
             board.setData(

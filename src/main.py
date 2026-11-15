@@ -5,6 +5,7 @@ from tkinter import *
 
 from _version import __version__
 from logger import configure_logger
+from platform_fallback import validate_platform_fallback_config
 from stationBoard import StationBoard
 
 DEFAULT_PLATFORMS = [1, 2]
@@ -66,6 +67,13 @@ if __name__ == "__main__":
     platforms = config.get("platforms", DEFAULT_PLATFORMS)
     validate_platforms(platforms)
     logger.info(f"Configured platforms: {platforms}")
+    platform_fallback = validate_platform_fallback_config(
+        config.get("platform_fallback"), platforms
+    )
+    logger.info(
+        "Platform fallback is %s",
+        "enabled" if platform_fallback["enabled"] else "disabled",
+    )
 
     station_board_width = config.get("station_board_width")
     station_board_height = config.get("station_board_height")
@@ -104,5 +112,6 @@ if __name__ == "__main__":
         platforms=platforms,
         platform_board_width=platform_board_width,
         platform_board_height=platform_board_height,
+        platform_fallback=platform_fallback,
         test=args.test,
     )

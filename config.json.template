@@ -3,5 +3,9 @@
     "stationCode": "",
     "platforms": [1, 2],
     "station_board_width": 800,
-    "station_board_height": 480
+    "station_board_height": 480,
+    "platform_fallback": {
+        "enabled": false,
+        "rules": []
+    }
 }
